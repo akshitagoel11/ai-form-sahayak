@@ -12,6 +12,7 @@ export default function PhotoCapture({ onPhotoCapture, language }: PhotoCaptureP
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -48,17 +49,29 @@ export default function PhotoCapture({ onPhotoCapture, language }: PhotoCaptureP
         throw new Error('Camera not supported in this browser');
       }
 
-      // Try basic camera first, then fallback to any available camera
+      // Try different camera configurations
       let mediaStream;
-      try {
-        mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user' }
-        });
-      } catch (frontCameraError) {
-        console.log('Front camera not available, trying any camera');
-        mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: true
-        });
+      const cameraConfigs = [
+        // Try front camera first
+        { video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } },
+        // Fallback to any camera with constraints
+        { video: { width: { ideal: 1280 }, height: { ideal: 720 } } },
+        // Basic video only
+        { video: true }
+      ];
+
+      for (const config of cameraConfigs) {
+        try {
+          mediaStream = await navigator.mediaDevices.getUserMedia(config);
+          console.log('Camera started with config:', config);
+          break;
+        } catch (configError) {
+          console.log('Camera config failed:', config, configError);
+        }
+      }
+
+      if (!mediaStream) {
+        throw new Error('Unable to access camera with any configuration');
       }
       
       setStream(mediaStream);
@@ -66,18 +79,43 @@ export default function PhotoCapture({ onPhotoCapture, language }: PhotoCaptureP
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        videoRef.current.onloadedmetadata = () => {
-          console.log('Video metadata loaded');
-          if (videoRef.current) {
-            videoRef.current.play().catch(console.error);
+        
+        // Set up video element properties
+        videoRef.current.muted = true;
+        videoRef.current.playsInline = true;
+        videoRef.current.autoplay = true;
+        
+        // Handle video loading and playing
+        const handleVideoReady = async () => {
+          try {
+            if (videoRef.current) {
+              await videoRef.current.play();
+              console.log('Video is now playing');
+              setIsVideoPlaying(true);
+            }
+          } catch (playError) {
+            console.error('Error playing video:', playError);
+            // Try to play again after a short delay
+            setTimeout(async () => {
+              try {
+                if (videoRef.current) {
+                  await videoRef.current.play();
+                  setIsVideoPlaying(true);
+                }
+              } catch (retryError) {
+                console.error('Retry play failed:', retryError);
+              }
+            }, 100);
           }
         };
-        videoRef.current.oncanplay = () => {
-          console.log('Video can play');
-        };
-        videoRef.current.onplaying = () => {
-          console.log('Video is playing');
-        };
+
+        // Listen for when video is ready
+        videoRef.current.onloadedmetadata = handleVideoReady;
+        
+        // If metadata is already loaded, start playing immediately
+        if (videoRef.current.readyState >= 1) {
+          handleVideoReady();
+        }
       }
     } catch (error: any) {
       console.error('Error accessing camera:', error);
@@ -115,6 +153,7 @@ export default function PhotoCapture({ onPhotoCapture, language }: PhotoCaptureP
       setStream(null);
     }
     setIsCameraActive(false);
+    setIsVideoPlaying(false);
   };
 
   const capturePhoto = () => {
@@ -204,13 +243,22 @@ export default function PhotoCapture({ onPhotoCapture, language }: PhotoCaptureP
                 muted
                 className="w-full h-64 object-cover"
                 style={{ transform: 'scaleX(-1)' }}
+                onLoadStart={() => console.log('Video load started')}
+                onLoadedData={() => console.log('Video data loaded')}
+                onPlaying={() => {
+                  console.log('Video is playing');
+                  setIsVideoPlaying(true);
+                }}
+                onError={(e) => console.error('Video error:', e)}
               />
-              {/* Fallback message if video doesn't load */}
-              <div className="absolute inset-0 flex items-center justify-center text-white text-sm">
-                <span className="bg-black bg-opacity-50 px-2 py-1 rounded">
-                  {language === 'english' ? 'Loading camera...' : 'कैमरा लोड हो रहा है...'}
-                </span>
-              </div>
+              {/* Loading overlay - only show when video is not playing */}
+              {!isVideoPlaying && (
+                <div className="absolute inset-0 flex items-center justify-center text-white text-sm bg-black bg-opacity-50">
+                  <span className="bg-black bg-opacity-75 px-3 py-2 rounded">
+                    {language === 'english' ? 'Loading camera...' : 'कैमरा लोड हो रहा है...'}
+                  </span>
+                </div>
+              )}
             </div>
             <div className="flex gap-2">
               <Button

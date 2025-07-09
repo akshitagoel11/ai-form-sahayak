@@ -13,6 +13,7 @@ export default function DocumentScanner({ onDocumentCapture, language, documentT
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [capturedDocument, setCapturedDocument] = useState<string | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -51,20 +52,73 @@ export default function DocumentScanner({ onDocumentCapture, language, documentT
         throw new Error('Camera not supported in this browser');
       }
 
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: 'environment', // Use back camera for document scanning
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+      // Try different camera configurations for document scanning
+      let mediaStream;
+      const cameraConfigs = [
+        // Try back camera first (ideal for document scanning)
+        { video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } },
+        // Fallback to any camera with constraints
+        { video: { width: { ideal: 1280 }, height: { ideal: 720 } } },
+        // Basic video only
+        { video: true }
+      ];
+
+      for (const config of cameraConfigs) {
+        try {
+          mediaStream = await navigator.mediaDevices.getUserMedia(config);
+          console.log('Camera started with config:', config);
+          break;
+        } catch (configError) {
+          console.log('Camera config failed:', config, configError);
         }
-      });
+      }
+
+      if (!mediaStream) {
+        throw new Error('Unable to access camera with any configuration');
+      }
       
       setStream(mediaStream);
       setIsCameraActive(true);
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        await videoRef.current.play();
+        
+        // Set up video element properties
+        videoRef.current.muted = true;
+        videoRef.current.playsInline = true;
+        videoRef.current.autoplay = true;
+        
+        // Handle video loading and playing
+        const handleVideoReady = async () => {
+          try {
+            if (videoRef.current) {
+              await videoRef.current.play();
+              console.log('Video is now playing');
+              setIsVideoPlaying(true);
+            }
+          } catch (playError) {
+            console.error('Error playing video:', playError);
+            // Try to play again after a short delay
+            setTimeout(async () => {
+              try {
+                if (videoRef.current) {
+                  await videoRef.current.play();
+                  setIsVideoPlaying(true);
+                }
+              } catch (retryError) {
+                console.error('Retry play failed:', retryError);
+              }
+            }, 100);
+          }
+        };
+
+        // Listen for when video is ready
+        videoRef.current.onloadedmetadata = handleVideoReady;
+        
+        // If metadata is already loaded, start playing immediately
+        if (videoRef.current.readyState >= 1) {
+          handleVideoReady();
+        }
       }
     } catch (error: any) {
       console.error('Error accessing camera:', error);
@@ -102,6 +156,7 @@ export default function DocumentScanner({ onDocumentCapture, language, documentT
       setStream(null);
     }
     setIsCameraActive(false);
+    setIsVideoPlaying(false);
   };
 
   const captureDocument = () => {
@@ -192,9 +247,25 @@ export default function DocumentScanner({ onDocumentCapture, language, documentT
                 ref={videoRef}
                 autoPlay
                 playsInline
+                muted
                 className="w-full h-64 object-cover"
+                onLoadStart={() => console.log('Video load started')}
+                onLoadedData={() => console.log('Video data loaded')}
+                onPlaying={() => {
+                  console.log('Video is playing');
+                  setIsVideoPlaying(true);
+                }}
+                onError={(e) => console.error('Video error:', e)}
               />
               <div className="absolute inset-0 border-2 border-white border-dashed m-4 rounded-lg"></div>
+              {/* Loading overlay - only show when video is not playing */}
+              {!isVideoPlaying && (
+                <div className="absolute inset-0 flex items-center justify-center text-white text-sm bg-black bg-opacity-50">
+                  <span className="bg-black bg-opacity-75 px-3 py-2 rounded">
+                    {language === 'english' ? 'Loading camera...' : 'कैमरा लोड हो रहा है...'}
+                  </span>
+                </div>
+              )}
             </div>
             <div className="flex gap-2">
               <Button
