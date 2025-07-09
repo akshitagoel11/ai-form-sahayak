@@ -24,6 +24,19 @@ AI Form Sahayak is a smart, multilingual government form assistant that helps us
 - Extended base schema to include applicantPhoto, applicantSignature, identityDocument, addressProof, and incomeDocument fields
 - All new fields are optional to maintain backward compatibility
 
+### Camera and Voice Input Fixes
+- Fixed camera black screen issue with improved video stream handling
+- Enhanced video element setup with proper event handling and retry logic
+- Fixed state field voice input to correctly map spoken state names to dropdown values
+- Added comprehensive debugging for voice processing pipeline
+- Improved browser compatibility for camera and voice features
+
+### VS Code Setup and Documentation
+- Created comprehensive setup guide for running in VS Code
+- Added VS Code workspace configuration files
+- Included troubleshooting guide for common development issues
+- Enhanced project documentation with step-by-step instructions
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
