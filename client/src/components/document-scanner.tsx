@@ -46,18 +46,53 @@ export default function DocumentScanner({ onDocumentCapture, language, documentT
 
   const startCamera = async () => {
     try {
+      // Check if camera is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Camera not supported in this browser');
+      }
+
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' } // Use back camera for document scanning
+        video: { 
+          facingMode: 'environment', // Use back camera for document scanning
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
       });
+      
       setStream(mediaStream);
       setIsCameraActive(true);
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        await videoRef.current.play();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error accessing camera:', error);
-      alert(language === 'english' ? 'Camera access denied' : 'कैमरा एक्सेस अनुमति नहीं दी गई');
+      
+      let errorMessage = '';
+      if (language === 'english') {
+        if (error.name === 'NotAllowedError') {
+          errorMessage = 'Camera permission denied. Please allow camera access and try again.';
+        } else if (error.name === 'NotFoundError') {
+          errorMessage = 'No camera found on this device.';
+        } else if (error.name === 'NotSupportedError') {
+          errorMessage = 'Camera not supported in this browser.';
+        } else {
+          errorMessage = 'Error accessing camera. Please check your browser settings.';
+        }
+      } else {
+        if (error.name === 'NotAllowedError') {
+          errorMessage = 'कैमरा अनुमति नहीं दी गई। कृपया कैमरा एक्सेस की अनुमति दें और फिर कोशिश करें।';
+        } else if (error.name === 'NotFoundError') {
+          errorMessage = 'इस डिवाइस पर कोई कैमरा नहीं मिला।';
+        } else if (error.name === 'NotSupportedError') {
+          errorMessage = 'इस ब्राउज़र में कैमरा समर्थित नहीं है।';
+        } else {
+          errorMessage = 'कैमरा एक्सेस में त्रुटि। कृपया अपनी ब्राउज़र सेटिंग्स जांचें।';
+        }
+      }
+      
+      alert(errorMessage);
     }
   };
 
