@@ -209,7 +209,9 @@ export default function FormFilling() {
           let processedText = recognizedText.trim();
           
           // Process based on field type using improved speech utils
+          console.log('Processing voice input:', recognizedText, 'for field:', fieldName, 'type:', field?.type);
           processedText = processVoiceInput(recognizedText, field?.type || 'text', language, fieldName);
+          console.log('Processed text result:', processedText);
           
           form.setValue(fieldName as any, processedText);
           resetTranscript();

@@ -129,70 +129,73 @@ const processDate = (text: string, language: 'english' | 'hindi'): string => {
 };
 
 const processState = (text: string, language: 'english' | 'hindi'): string => {
-  // Common state mappings
+  // State mappings that return the value format expected by the select component
   const stateMap = {
     english: {
-      'up': 'Uttar Pradesh',
-      'uttarpradesh': 'Uttar Pradesh',
-      'uttar pradesh': 'Uttar Pradesh',
-      'mp': 'Madhya Pradesh',
-      'madhyapradesh': 'Madhya Pradesh',
-      'madhya pradesh': 'Madhya Pradesh',
-      'rajasthan': 'Rajasthan',
-      'maharashtra': 'Maharashtra',
-      'gujarat': 'Gujarat',
-      'punjab': 'Punjab',
-      'haryana': 'Haryana',
-      'bihar': 'Bihar',
-      'westbengal': 'West Bengal',
-      'west bengal': 'West Bengal',
-      'karnataka': 'Karnataka',
-      'tamilnadu': 'Tamil Nadu',
-      'tamil nadu': 'Tamil Nadu',
-      'kerala': 'Kerala',
-      'andhra pradesh': 'Andhra Pradesh',
-      'telangana': 'Telangana',
-      'odisha': 'Odisha',
-      'jharkhand': 'Jharkhand',
-      'chhattisgarh': 'Chhattisgarh',
-      'assam': 'Assam',
-      'himachal pradesh': 'Himachal Pradesh',
-      'uttarakhand': 'Uttarakhand',
-      'goa': 'Goa',
-      'delhi': 'Delhi'
+      'up': 'uttar-pradesh',
+      'uttarpradesh': 'uttar-pradesh',
+      'uttar pradesh': 'uttar-pradesh',
+      'mp': 'madhya-pradesh',
+      'madhyapradesh': 'madhya-pradesh',
+      'madhya pradesh': 'madhya-pradesh',
+      'rajasthan': 'rajasthan',
+      'maharashtra': 'maharashtra',
+      'gujarat': 'gujarat',
+      'punjab': 'punjab',
+      'haryana': 'haryana',
+      'bihar': 'bihar',
+      'westbengal': 'west-bengal',
+      'west bengal': 'west-bengal',
+      'karnataka': 'karnataka',
+      'tamilnadu': 'tamil-nadu',
+      'tamil nadu': 'tamil-nadu',
+      'kerala': 'kerala',
+      'andhra pradesh': 'andhra-pradesh',
+      'telangana': 'telangana',
+      'odisha': 'odisha',
+      'jharkhand': 'jharkhand',
+      'chhattisgarh': 'chhattisgarh',
+      'assam': 'assam',
+      'himachal pradesh': 'himachal-pradesh',
+      'uttarakhand': 'uttarakhand',
+      'goa': 'goa',
+      'delhi': 'delhi'
     },
     hindi: {
-      'उत्तर प्रदेश': 'Uttar Pradesh',
-      'मध्य प्रदेश': 'Madhya Pradesh',
-      'राजस्थान': 'Rajasthan',
-      'महाराष्ट्र': 'Maharashtra',
-      'गुजरात': 'Gujarat',
-      'पंजाब': 'Punjab',
-      'हरियाणा': 'Haryana',
-      'बिहार': 'Bihar',
-      'पश्चिम बंगाल': 'West Bengal',
-      'कर्नाटक': 'Karnataka',
-      'तमिलनाडु': 'Tamil Nadu',
-      'केरल': 'Kerala',
-      'आंध्र प्रदेश': 'Andhra Pradesh',
-      'तेलंगाना': 'Telangana',
-      'ओडिशा': 'Odisha',
-      'झारखंड': 'Jharkhand',
-      'छत्तीसगढ़': 'Chhattisgarh',
-      'असम': 'Assam',
-      'हिमाचल प्रदेश': 'Himachal Pradesh',
-      'उत्तराखंड': 'Uttarakhand',
-      'गोवा': 'Goa',
-      'दिल्ली': 'Delhi'
+      'उत्तर प्रदेश': 'uttar-pradesh',
+      'मध्य प्रदेश': 'madhya-pradesh',
+      'राजस्थान': 'rajasthan',
+      'महाराष्ट्र': 'maharashtra',
+      'गुजरात': 'gujarat',
+      'पंजाब': 'punjab',
+      'हरियाणा': 'haryana',
+      'बिहार': 'bihar',
+      'पश्चिम बंगाल': 'west-bengal',
+      'कर्नाटक': 'karnataka',
+      'तमिलनाडु': 'tamil-nadu',
+      'केरल': 'kerala',
+      'आंध्र प्रदेश': 'andhra-pradesh',
+      'तेलंगाना': 'telangana',
+      'ओडिशा': 'odisha',
+      'झारखंड': 'jharkhand',
+      'छत्तीसगढ़': 'chhattisgarh',
+      'असम': 'assam',
+      'हिमाचल प्रदेश': 'himachal-pradesh',
+      'उत्तराखंड': 'uttarakhand',
+      'गोवा': 'goa',
+      'दिल्ली': 'delhi'
     }
   };
 
   const normalizedInput = text.toLowerCase().trim();
   const states = stateMap[language];
   
+  console.log('Processing state input:', normalizedInput, 'Language:', language);
+  
   // Check for exact match first
   for (const [key, value] of Object.entries(states)) {
     if (normalizedInput === key.toLowerCase()) {
+      console.log('Exact match found:', key, '->', value);
       return value;
     }
   }
@@ -200,10 +203,12 @@ const processState = (text: string, language: 'english' | 'hindi'): string => {
   // Check for partial match
   for (const [key, value] of Object.entries(states)) {
     if (normalizedInput.includes(key.toLowerCase()) || key.toLowerCase().includes(normalizedInput)) {
+      console.log('Partial match found:', key, '->', value);
       return value;
     }
   }
   
+  console.log('No state match found, returning cleaned text');
   // Return cleaned text if no state match found
   return cleanText(text);
 };

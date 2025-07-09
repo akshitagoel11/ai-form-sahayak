@@ -57,11 +57,28 @@ export default function FormFieldWithVoice({
   };
 
   const stateOptions = [
+    { value: "andhra-pradesh", label: { english: "Andhra Pradesh", hindi: "आंध्र प्रदेश" } },
+    { value: "assam", label: { english: "Assam", hindi: "असम" } },
+    { value: "bihar", label: { english: "Bihar", hindi: "बिहार" } },
+    { value: "chhattisgarh", label: { english: "Chhattisgarh", hindi: "छत्तीसगढ़" } },
     { value: "delhi", label: { english: "Delhi", hindi: "दिल्ली" } },
-    { value: "maharashtra", label: { english: "Maharashtra", hindi: "महाराष्ट्र" } },
-    { value: "uttar-pradesh", label: { english: "Uttar Pradesh", hindi: "उत्तर प्रदेश" } },
+    { value: "goa", label: { english: "Goa", hindi: "गोवा" } },
     { value: "gujarat", label: { english: "Gujarat", hindi: "गुजरात" } },
+    { value: "haryana", label: { english: "Haryana", hindi: "हरियाणा" } },
+    { value: "himachal-pradesh", label: { english: "Himachal Pradesh", hindi: "हिमाचल प्रदेश" } },
+    { value: "jharkhand", label: { english: "Jharkhand", hindi: "झारखंड" } },
+    { value: "karnataka", label: { english: "Karnataka", hindi: "कर्नाटक" } },
+    { value: "kerala", label: { english: "Kerala", hindi: "केरल" } },
+    { value: "madhya-pradesh", label: { english: "Madhya Pradesh", hindi: "मध्य प्रदेश" } },
+    { value: "maharashtra", label: { english: "Maharashtra", hindi: "महाराष्ट्र" } },
+    { value: "odisha", label: { english: "Odisha", hindi: "ओडिशा" } },
+    { value: "punjab", label: { english: "Punjab", hindi: "पंजाब" } },
     { value: "rajasthan", label: { english: "Rajasthan", hindi: "राजस्थान" } },
+    { value: "tamil-nadu", label: { english: "Tamil Nadu", hindi: "तमिलनाडु" } },
+    { value: "telangana", label: { english: "Telangana", hindi: "तेलंगाना" } },
+    { value: "uttar-pradesh", label: { english: "Uttar Pradesh", hindi: "उत्तर प्रदेश" } },
+    { value: "uttarakhand", label: { english: "Uttarakhand", hindi: "उत्तराखंड" } },
+    { value: "west-bengal", label: { english: "West Bengal", hindi: "पश्चिम बंगाल" } },
   ];
 
   const placeholder = placeholders[language][field.name as keyof typeof placeholders[typeof language]];
