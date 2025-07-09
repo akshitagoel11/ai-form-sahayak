@@ -48,21 +48,36 @@ export default function PhotoCapture({ onPhotoCapture, language }: PhotoCaptureP
         throw new Error('Camera not supported in this browser');
       }
 
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: 'user',
-          width: { ideal: 640 },
-          height: { ideal: 480 }
-        }
-      });
+      // Try basic camera first, then fallback to any available camera
+      let mediaStream;
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user' }
+        });
+      } catch (frontCameraError) {
+        console.log('Front camera not available, trying any camera');
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: true
+        });
+      }
       
       setStream(mediaStream);
       setIsCameraActive(true);
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        // Ensure video plays
-        await videoRef.current.play();
+        videoRef.current.onloadedmetadata = () => {
+          console.log('Video metadata loaded');
+          if (videoRef.current) {
+            videoRef.current.play().catch(console.error);
+          }
+        };
+        videoRef.current.oncanplay = () => {
+          console.log('Video can play');
+        };
+        videoRef.current.onplaying = () => {
+          console.log('Video is playing');
+        };
       }
     } catch (error: any) {
       console.error('Error accessing camera:', error);
@@ -186,8 +201,16 @@ export default function PhotoCapture({ onPhotoCapture, language }: PhotoCaptureP
                 ref={videoRef}
                 autoPlay
                 playsInline
+                muted
                 className="w-full h-64 object-cover"
+                style={{ transform: 'scaleX(-1)' }}
               />
+              {/* Fallback message if video doesn't load */}
+              <div className="absolute inset-0 flex items-center justify-center text-white text-sm">
+                <span className="bg-black bg-opacity-50 px-2 py-1 rounded">
+                  {language === 'english' ? 'Loading camera...' : 'कैमरा लोड हो रहा है...'}
+                </span>
+              </div>
             </div>
             <div className="flex gap-2">
               <Button
