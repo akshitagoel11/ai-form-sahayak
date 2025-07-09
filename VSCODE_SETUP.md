@@ -50,14 +50,40 @@ npm install
 
 ### 4. Run the Application
 
-In the VS Code terminal, run:
-
+#### Option 1: Using Cross-Platform Script (Recommended)
 ```bash
-npm run dev
+node scripts/dev.js
+```
+
+#### Option 2: Using Batch File (Windows Only)
+```bash
+dev.bat
+```
+
+#### Option 3: Using npx directly
+```bash
+npx cross-env NODE_ENV=development tsx server/index.ts
+```
+
+#### Option 4: Manual Environment Setup
+**Windows Command Prompt:**
+```cmd
+set NODE_ENV=development && npx tsx server/index.ts
+```
+
+**Windows PowerShell:**
+```powershell
+$env:NODE_ENV="development"; npx tsx server/index.ts
+```
+
+**Mac/Linux:**
+```bash
+NODE_ENV=development npx tsx server/index.ts
 ```
 
 You should see output like:
 ```
+🚀 Starting AI Form Sahayak in development mode...
 [express] serving on port 5000
 ```
 
@@ -66,6 +92,26 @@ You should see output like:
 Open your browser and go to: `http://localhost:5000`
 
 ## Troubleshooting Common Issues
+
+### Issue: "NODE_ENV is not recognized" on Windows
+
+This is the exact error you're seeing. **Solutions:**
+
+**Solution 1: Use the batch file (Easiest)**
+```cmd
+dev.bat
+```
+
+**Solution 2: Use cross-platform script**
+```bash
+node scripts/dev.js
+```
+
+**Solution 3: Install cross-env and use npm scripts**
+```bash
+npm install cross-env
+# Then use: npm run dev
+```
 
 ### Issue: "npm install" fails with permission errors
 

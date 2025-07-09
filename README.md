@@ -49,6 +49,17 @@ NODE_ENV=development
 
 Start the development server:
 
+**For Windows (if you get NODE_ENV error):**
+```bash
+dev.bat
+```
+
+**For all platforms:**
+```bash
+node scripts/dev.js
+```
+
+**Using npm (after installing cross-env):**
 ```bash
 npm run dev
 ```
