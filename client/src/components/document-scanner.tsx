@@ -81,18 +81,18 @@ export default function DocumentScanner({ onDocumentCapture, language, documentT
       setIsCameraActive(true);
       
       if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
+        const video = videoRef.current;
         
-        // Set up video element properties
-        videoRef.current.muted = true;
-        videoRef.current.playsInline = true;
-        videoRef.current.autoplay = true;
+        // Set up video element properties first
+        video.muted = true;
+        video.playsInline = true;
+        video.autoplay = true;
         
         // Handle video loading and playing
         const handleVideoReady = async () => {
           try {
-            if (videoRef.current) {
-              await videoRef.current.play();
+            if (video && video.srcObject) {
+              await video.play();
               console.log('Video is now playing');
               setIsVideoPlaying(true);
             }
@@ -101,8 +101,8 @@ export default function DocumentScanner({ onDocumentCapture, language, documentT
             // Try to play again after a short delay
             setTimeout(async () => {
               try {
-                if (videoRef.current) {
-                  await videoRef.current.play();
+                if (video && video.srcObject) {
+                  await video.play();
                   setIsVideoPlaying(true);
                 }
               } catch (retryError) {
@@ -112,13 +112,32 @@ export default function DocumentScanner({ onDocumentCapture, language, documentT
           }
         };
 
-        // Listen for when video is ready
-        videoRef.current.onloadedmetadata = handleVideoReady;
-        
-        // If metadata is already loaded, start playing immediately
-        if (videoRef.current.readyState >= 1) {
+        // Add event listeners before setting srcObject
+        video.onloadedmetadata = () => {
+          console.log('Video metadata loaded, dimensions:', video.videoWidth, 'x', video.videoHeight);
           handleVideoReady();
-        }
+        };
+        
+        video.oncanplay = () => {
+          console.log('Video can play');
+          handleVideoReady();
+        };
+        
+        // Reset video playing state
+        setIsVideoPlaying(false);
+        
+        // Set the stream - this should trigger the events
+        video.srcObject = mediaStream;
+        
+        // Force load if needed
+        video.load();
+        
+        // Try to play immediately in case events don't fire
+        setTimeout(() => {
+          if (video.readyState >= 2) { // HAVE_CURRENT_DATA
+            handleVideoReady();
+          }
+        }, 100);
       }
     } catch (error: any) {
       console.error('Error accessing camera:', error);
@@ -248,14 +267,29 @@ export default function DocumentScanner({ onDocumentCapture, language, documentT
                 autoPlay
                 playsInline
                 muted
-                className="w-full h-64 object-cover"
+                className="w-full h-64 object-cover bg-black"
                 onLoadStart={() => console.log('Video load started')}
                 onLoadedData={() => console.log('Video data loaded')}
+                onLoadedMetadata={(e) => {
+                  const video = e.target as HTMLVideoElement;
+                  console.log('Video metadata loaded, size:', video.videoWidth, 'x', video.videoHeight);
+                }}
                 onPlaying={() => {
                   console.log('Video is playing');
                   setIsVideoPlaying(true);
                 }}
-                onError={(e) => console.error('Video error:', e)}
+                onPause={() => console.log('Video paused')}
+                onError={(e) => {
+                  console.error('Video error:', e);
+                  const video = e.target as HTMLVideoElement;
+                  console.error('Video error details:', {
+                    error: video.error,
+                    networkState: video.networkState,
+                    readyState: video.readyState,
+                    srcObject: video.srcObject
+                  });
+                }}
+                onCanPlay={() => console.log('Video can play')}
               />
               <div className="absolute inset-0 border-2 border-white border-dashed m-4 rounded-lg"></div>
               {/* Loading overlay - only show when video is not playing */}
