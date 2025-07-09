@@ -11,6 +11,13 @@ const baseFormSchema = z.object({
   state: z.string().min(1, "State is required"),
   district: z.string().min(1, "District is required"),
   pincode: z.string().regex(/^\d{6}$/, "PIN code must be 6 digits"),
+  
+  // New fields for photo, signature, and documents
+  applicantPhoto: z.string().optional(),
+  applicantSignature: z.string().optional(),
+  identityDocument: z.string().optional(),
+  addressProof: z.string().optional(),
+  incomeDocument: z.string().optional(),
 });
 
 // Scheme-specific form schemas

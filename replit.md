@@ -4,6 +4,26 @@
 
 AI Form Sahayak is a smart, multilingual government form assistant that helps users fill out government scheme applications using voice assistance. The application supports both English and Hindi languages and provides an intuitive interface for completing various government forms with step-by-step voice guidance.
 
+## Recent Changes (January 2025)
+
+### Enhanced Voice Recognition and Processing
+- Improved speech-to-text processing for dates, states, and email formatting
+- Added comprehensive state recognition for both English and Hindi
+- Enhanced date parsing with month name recognition
+- Better email formatting (lowercase, no spaces)
+- Improved number and currency recognition for income fields
+
+### Photo, Signature, and Document Features
+- **Photo Capture**: Camera-based photo capture with gallery upload option
+- **Digital Signature**: Canvas-based signature pad with touch/mouse support
+- **Document Scanner**: Camera-based document scanning for identity, address, and income documents
+- Modal interfaces for all capture components
+- Real-time preview and retake functionality
+
+### Form Schema Updates
+- Extended base schema to include applicantPhoto, applicantSignature, identityDocument, addressProof, and incomeDocument fields
+- All new fields are optional to maintain backward compatibility
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.

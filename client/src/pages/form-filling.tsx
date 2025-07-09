@@ -11,12 +11,16 @@ import { Form } from "@/components/ui/form";
 import LanguageToggle from "@/components/language-toggle";
 import VoiceAssistant from "@/components/voice-assistant";
 import FormFieldWithVoice from "@/components/form-field-with-voice";
+import PhotoCapture from "@/components/photo-capture";
+import SignaturePad from "@/components/signature-pad";
+import DocumentScanner from "@/components/document-scanner";
 import { useTextToSpeech } from "@/hooks/use-text-to-speech";
 import { useSpeechRecognition } from "@/hooks/use-speech-recognition";
 import { getFormSchema } from "@/lib/form-schemas";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Mic, Save, Send, ArrowLeft, MicOff } from "lucide-react";
+import { processVoiceInput } from "@/lib/speech-utils";
+import { Mic, Save, Send, ArrowLeft, MicOff, Camera, Pen, Scan, X } from "lucide-react";
 
 export default function FormFilling() {
   const { schemeId } = useParams();
@@ -29,6 +33,10 @@ export default function FormFilling() {
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [currentFieldIndex, setCurrentFieldIndex] = useState(0);
   const [formSubmissionId, setFormSubmissionId] = useState<number | null>(null);
+  const [showPhotoCapture, setShowPhotoCapture] = useState(false);
+  const [showSignaturePad, setShowSignaturePad] = useState(false);
+  const [showDocumentScanner, setShowDocumentScanner] = useState(false);
+  const [currentDocumentType, setCurrentDocumentType] = useState<string>('');
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -200,14 +208,8 @@ export default function FormFilling() {
         if (recognizedText.trim()) {
           let processedText = recognizedText.trim();
           
-          // Process based on field type
-          if (fieldName === 'annualIncome') {
-            processedText = processIncomeText(recognizedText, language);
-          } else if (fieldName === 'mobileNumber' || fieldName === 'pincode') {
-            processedText = extractDigitsFromText(recognizedText, language);
-          } else if (fieldName === 'fullName' || fieldName === 'fatherName') {
-            processedText = capitalizeWords(recognizedText);
-          }
+          // Process based on field type using improved speech utils
+          processedText = processVoiceInput(recognizedText, field?.type || 'text', language, fieldName);
           
           form.setValue(fieldName as any, processedText);
           resetTranscript();
@@ -325,6 +327,46 @@ export default function FormFilling() {
   // Helper function to capitalize words
   const capitalizeWords = (text: string): string => {
     return text.replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  // Photo capture handler
+  const handlePhotoCapture = (imageData: string) => {
+    form.setValue('applicantPhoto', imageData);
+    setShowPhotoCapture(false);
+    
+    const confirmation = language === 'english' 
+      ? 'Photo captured successfully!' 
+      : 'फोटो सफलतापूर्वक कैप्चर हुई!';
+    speak(confirmation);
+  };
+
+  // Signature capture handler
+  const handleSignatureCapture = (signatureData: string) => {
+    form.setValue('applicantSignature', signatureData);
+    setShowSignaturePad(false);
+    
+    const confirmation = language === 'english' 
+      ? 'Signature captured successfully!' 
+      : 'हस्ताक्षर सफलतापूर्वक कैप्चर हुआ!';
+    speak(confirmation);
+  };
+
+  // Document capture handler
+  const handleDocumentCapture = (documentData: string, documentType: string) => {
+    form.setValue(documentType as any, documentData);
+    setShowDocumentScanner(false);
+    setCurrentDocumentType('');
+    
+    const confirmation = language === 'english' 
+      ? 'Document captured successfully!' 
+      : 'दस्तावेज़ सफलतापूर्वक कैप्चर हुआ!';
+    speak(confirmation);
+  };
+
+  // Open document scanner
+  const openDocumentScanner = (documentType: string) => {
+    setCurrentDocumentType(documentType);
+    setShowDocumentScanner(true);
   };
 
   const handleSaveDraft = () => {
@@ -498,6 +540,200 @@ export default function FormFilling() {
                 </div>
               </div>
 
+              {/* Photo and Signature Section */}
+              <div className="border-l-4 border-purple-500 pl-4">
+                <h4 className="text-lg font-medium text-gray-900 mb-4">
+                  {language === 'english' ? 'Photo & Signature' : 'फोटो और हस्ताक्षर'}
+                </h4>
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Photo Section */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {language === 'english' ? 'Applicant Photo' : 'आवेदक की फोटो'}
+                    </label>
+                    {form.watch('applicantPhoto') ? (
+                      <div className="relative">
+                        <img 
+                          src={form.watch('applicantPhoto')} 
+                          alt="Applicant" 
+                          className="w-32 h-32 object-cover rounded-lg border-2 border-gray-200"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => setShowPhotoCapture(true)}
+                        >
+                          {language === 'english' ? 'Change Photo' : 'फोटो बदलें'}
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full h-32 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-2"
+                        onClick={() => setShowPhotoCapture(true)}
+                      >
+                        <Camera size={24} className="text-gray-400" />
+                        <span className="text-sm text-gray-600">
+                          {language === 'english' ? 'Take Photo' : 'फोटो लें'}
+                        </span>
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Signature Section */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {language === 'english' ? 'Digital Signature' : 'डिजिटल हस्ताक्षर'}
+                    </label>
+                    {form.watch('applicantSignature') ? (
+                      <div className="relative">
+                        <img 
+                          src={form.watch('applicantSignature')} 
+                          alt="Signature" 
+                          className="w-full h-32 object-cover rounded-lg border-2 border-gray-200 bg-white"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => setShowSignaturePad(true)}
+                        >
+                          {language === 'english' ? 'Change Signature' : 'हस्ताक्षर बदलें'}
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full h-32 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-2"
+                        onClick={() => setShowSignaturePad(true)}
+                      >
+                        <Pen size={24} className="text-gray-400" />
+                        <span className="text-sm text-gray-600">
+                          {language === 'english' ? 'Add Signature' : 'हस्ताक्षर जोड़ें'}
+                        </span>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Document Upload Section */}
+              <div className="border-l-4 border-orange-500 pl-4">
+                <h4 className="text-lg font-medium text-gray-900 mb-4">
+                  {language === 'english' ? 'Required Documents' : 'आवश्यक दस्तावेज़'}
+                </h4>
+                
+                <div className="space-y-4">
+                  {/* Identity Document */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {language === 'english' ? 'Identity Document (Aadhar/Voter ID)' : 'पहचान दस्तावेज़ (आधार/वोटर आईडी)'}
+                    </label>
+                    {form.watch('identityDocument') ? (
+                      <div className="flex items-center justify-between p-3 border rounded-lg bg-green-50">
+                        <span className="text-sm text-green-700">
+                          {language === 'english' ? 'Document uploaded' : 'दस्तावेज़ अपलोड हो गया'}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openDocumentScanner('identityDocument')}
+                        >
+                          {language === 'english' ? 'Replace' : 'बदलें'}
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full p-6 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-2"
+                        onClick={() => openDocumentScanner('identityDocument')}
+                      >
+                        <Scan size={24} className="text-gray-400" />
+                        <span className="text-sm text-gray-600">
+                          {language === 'english' ? 'Scan Identity Document' : 'पहचान दस्तावेज़ स्कैन करें'}
+                        </span>
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Address Proof */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {language === 'english' ? 'Address Proof' : 'पता प्रमाण'}
+                    </label>
+                    {form.watch('addressProof') ? (
+                      <div className="flex items-center justify-between p-3 border rounded-lg bg-green-50">
+                        <span className="text-sm text-green-700">
+                          {language === 'english' ? 'Document uploaded' : 'दस्तावेज़ अपलोड हो गया'}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openDocumentScanner('addressProof')}
+                        >
+                          {language === 'english' ? 'Replace' : 'बदलें'}
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full p-6 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-2"
+                        onClick={() => openDocumentScanner('addressProof')}
+                      >
+                        <Scan size={24} className="text-gray-400" />
+                        <span className="text-sm text-gray-600">
+                          {language === 'english' ? 'Scan Address Proof' : 'पता प्रमाण स्कैन करें'}
+                        </span>
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Income Document */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {language === 'english' ? 'Income Certificate' : 'आय प्रमाण पत्र'}
+                    </label>
+                    {form.watch('incomeDocument') ? (
+                      <div className="flex items-center justify-between p-3 border rounded-lg bg-green-50">
+                        <span className="text-sm text-green-700">
+                          {language === 'english' ? 'Document uploaded' : 'दस्तावेज़ अपलोड हो गया'}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openDocumentScanner('incomeDocument')}
+                        >
+                          {language === 'english' ? 'Replace' : 'बदलें'}
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full p-6 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-2"
+                        onClick={() => openDocumentScanner('incomeDocument')}
+                      >
+                        <Scan size={24} className="text-gray-400" />
+                        <span className="text-sm text-gray-600">
+                          {language === 'english' ? 'Scan Income Certificate' : 'आय प्रमाण पत्र स्कैन करें'}
+                        </span>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* Form Actions */}
               <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200">
                 <Button
@@ -532,6 +768,85 @@ export default function FormFilling() {
             isSpeaking={isSpeaking}
             onClose={() => setIsVoiceMode(false)}
           />
+        )}
+
+        {/* Photo Capture Modal */}
+        {showPhotoCapture && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-4 border-b flex justify-between items-center">
+                <h3 className="text-lg font-semibold">
+                  {language === 'english' ? 'Capture Photo' : 'फोटो कैप्चर करें'}
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowPhotoCapture(false)}
+                >
+                  <X size={16} />
+                </Button>
+              </div>
+              <div className="p-4">
+                <PhotoCapture
+                  onPhotoCapture={handlePhotoCapture}
+                  language={language}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Signature Pad Modal */}
+        {showSignaturePad && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-4 border-b flex justify-between items-center">
+                <h3 className="text-lg font-semibold">
+                  {language === 'english' ? 'Digital Signature' : 'डिजिटल हस्ताक्षर'}
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowSignaturePad(false)}
+                >
+                  <X size={16} />
+                </Button>
+              </div>
+              <div className="p-4">
+                <SignaturePad
+                  onSignatureCapture={handleSignatureCapture}
+                  language={language}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Document Scanner Modal */}
+        {showDocumentScanner && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-4 border-b flex justify-between items-center">
+                <h3 className="text-lg font-semibold">
+                  {language === 'english' ? 'Scan Document' : 'दस्तावेज़ स्कैन करें'}
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowDocumentScanner(false)}
+                >
+                  <X size={16} />
+                </Button>
+              </div>
+              <div className="p-4">
+                <DocumentScanner
+                  onDocumentCapture={handleDocumentCapture}
+                  language={language}
+                  documentType={currentDocumentType}
+                />
+              </div>
+            </div>
+          </div>
         )}
       </main>
     </div>

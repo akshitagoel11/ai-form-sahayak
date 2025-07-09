@@ -1,0 +1,208 @@
+import { useState, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Camera, Upload, X, RotateCw } from "lucide-react";
+
+interface PhotoCaptureProps {
+  onPhotoCapture: (imageData: string) => void;
+  language: 'english' | 'hindi';
+}
+
+export default function PhotoCapture({ onPhotoCapture, language }: PhotoCaptureProps) {
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const content = {
+    english: {
+      title: "Applicant Photo",
+      description: "Take a photo or upload from gallery",
+      cameraButton: "Open Camera",
+      uploadButton: "Upload Photo",
+      captureButton: "Capture Photo",
+      retakeButton: "Retake",
+      usePhotoButton: "Use Photo",
+      cancelButton: "Cancel"
+    },
+    hindi: {
+      title: "आवेदक की फोटो",
+      description: "फोटो लें या गैलरी से अपलोड करें",
+      cameraButton: "कैमरा खोलें",
+      uploadButton: "फोटो अपलोड करें",
+      captureButton: "फोटो लें",
+      retakeButton: "फिर से लें",
+      usePhotoButton: "फोटो उपयोग करें",
+      cancelButton: "रद्द करें"
+    }
+  };
+
+  const currentContent = content[language];
+
+  const startCamera = async () => {
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user' }
+      });
+      setStream(mediaStream);
+      setIsCameraActive(true);
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      alert(language === 'english' ? 'Camera access denied' : 'कैमरा एक्सेस अनुमति नहीं दी गई');
+    }
+  };
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+    setIsCameraActive(false);
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const video = videoRef.current;
+      const context = canvas.getContext('2d');
+      
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      if (context) {
+        context.drawImage(video, 0, 0);
+        const imageData = canvas.toDataURL('image/jpeg', 0.8);
+        setCapturedImage(imageData);
+        stopCamera();
+      }
+    }
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageData = e.target?.result as string;
+        setCapturedImage(imageData);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUsePhoto = () => {
+    if (capturedImage) {
+      onPhotoCapture(capturedImage);
+    }
+  };
+
+  const handleRetake = () => {
+    setCapturedImage(null);
+    if (isCameraActive) {
+      stopCamera();
+    }
+  };
+
+  return (
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader>
+        <CardTitle className="text-center">{currentContent.title}</CardTitle>
+        <p className="text-sm text-gray-600 text-center">{currentContent.description}</p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {!isCameraActive && !capturedImage && (
+          <div className="space-y-3">
+            <Button
+              onClick={startCamera}
+              className="w-full flex items-center justify-center gap-2"
+            >
+              <Camera size={20} />
+              {currentContent.cameraButton}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full flex items-center justify-center gap-2"
+            >
+              <Upload size={20} />
+              {currentContent.uploadButton}
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+          </div>
+        )}
+
+        {isCameraActive && (
+          <div className="space-y-3">
+            <div className="relative bg-black rounded-lg overflow-hidden">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                className="w-full h-64 object-cover"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={capturePhoto}
+                className="flex-1 flex items-center justify-center gap-2"
+              >
+                <Camera size={20} />
+                {currentContent.captureButton}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={stopCamera}
+                className="flex items-center justify-center gap-2"
+              >
+                <X size={20} />
+                {currentContent.cancelButton}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {capturedImage && (
+          <div className="space-y-3">
+            <div className="relative bg-gray-100 rounded-lg overflow-hidden">
+              <img
+                src={capturedImage}
+                alt="Captured"
+                className="w-full h-64 object-cover"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleUsePhoto}
+                className="flex-1 flex items-center justify-center gap-2"
+              >
+                {currentContent.usePhotoButton}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleRetake}
+                className="flex items-center justify-center gap-2"
+              >
+                <RotateCw size={20} />
+                {currentContent.retakeButton}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <canvas ref={canvasRef} className="hidden" />
+      </CardContent>
+    </Card>
+  );
+}
