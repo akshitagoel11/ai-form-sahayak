@@ -83,5 +83,4 @@ NODE_ENV=development
 MIT License - see LICENSE file for details
 
 ## Support
-
 For issues or questions, please create an issue on GitHub.
