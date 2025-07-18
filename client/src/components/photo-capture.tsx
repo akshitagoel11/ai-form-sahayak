@@ -41,7 +41,7 @@ export default function PhotoCapture({ onPhotoCapture, language }: PhotoCaptureP
   };
 
   const currentContent = content[language];
-
+  
   const startCamera = async () => {
     try {
       // Check if camera is available

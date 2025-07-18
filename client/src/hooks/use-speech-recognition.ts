@@ -1,5 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
-
+declare global {
+  interface Window {
+    SpeechRecognition: typeof SpeechRecognition;
+    webkitSpeechRecognition: typeof SpeechRecognition;
+  }
+  var SpeechRecognition: {
+    prototype: SpeechRecognition;
+    new (): SpeechRecognition;
+  };
+}
+type SpeechRecognition = any; // Or use a more specific type if you have @types/web-speech-api
+type SpeechRecognitionEvent = any;
 export function useSpeechRecognition(language: 'english' | 'hindi') {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -22,13 +33,13 @@ export function useSpeechRecognition(language: 'english' | 'hindi') {
       setIsListening(true);
     };
 
-    recognitionInstance.onresult = (event) => {
+    recognitionInstance.onresult = (event: SpeechRecognitionEvent) => {
       const result = event.results[0][0].transcript;
       setTranscript(result);
       setIsListening(false);
     };
 
-    recognitionInstance.onerror = (event) => {
+    recognitionInstance.onerror = (event: SpeechRecognitionEvent) => {
       console.error('Speech recognition error:', event.error);
       setIsListening(false);
     };
